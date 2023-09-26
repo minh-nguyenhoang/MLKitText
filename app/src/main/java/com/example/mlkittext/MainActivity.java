@@ -30,6 +30,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.mlkit.common.model.DownloadConditions;
@@ -126,6 +127,10 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 ((MaterialButton)findViewById(R.id.leftLanguage)).setText(rightLang);
                 ((MaterialButton)findViewById(R.id.rightLanguage)).setText(leftLang);
+
+                leftLang = ((MaterialButton)findViewById(R.id.leftLanguage)).getText().toString();
+                rightLang = ((MaterialButton)findViewById(R.id.rightLanguage)).getText().toString();
+
                 TranslatorOptions options =
                         new TranslatorOptions.Builder()
                                 .setSourceLanguage(TranslateLanguage.ENGLISH)
@@ -135,8 +140,7 @@ public class MainActivity extends AppCompatActivity {
                 textTranslator = Translation.getClient(options);
                 textTranslator.downloadModelIfNeeded(conditions);
 
-                leftLang = ((MaterialButton)findViewById(R.id.leftLanguage)).getText().toString();
-                rightLang = ((MaterialButton)findViewById(R.id.rightLanguage)).getText().toString();
+
 
             }
         });
@@ -212,11 +216,13 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
 
+
         } catch (Exception e) {
             progressDialog.dismiss();
             Log.e(TAG, "recognizeTextFromImage: ", e);
-            Toast.makeText(MainActivity.this, "Failed recognizing text due to "+e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "Failed recognizing text due to "+e.getMessage(), Toast.LENGTH_LONG).show();
         }
+
     }
 
     private void showInputImageDialog() {
@@ -404,12 +410,45 @@ public class MainActivity extends AppCompatActivity {
             String recognizedText = recognizedTextEt.getText().toString();
             if (recognizedText == null || recognizedText.isEmpty() || recognizedText.trim().isEmpty()){
 
-                recognizeTextFromImage();
+                try {
+                    InputImage inputImage = InputImage.fromFilePath(this, imageUri);
 
-                progressDialog.setMessage("Recognizing Text...");
-                recognizedText = recognizedTextEt.getText().toString();
-                progressDialog.setMessage("Translating text...");
-                doTranslation(recognizedText);
+                    progressDialog.setMessage("Recognizing Text...");
+
+                    Task<Text> textTaskResult = textRecognizer.process(inputImage)
+                            .addOnSuccessListener(new OnSuccessListener<Text>() {
+                                @Override
+                                public void onSuccess(Text text) {
+
+                                    progressDialog.dismiss();
+                                    String recognizedText = text.getText();
+                                    Log.d(TAG, "onSuccess: recognizedText:"+ recognizedText);
+                                    progressDialog.setMessage("Translating text...");
+                                    progressDialog.show();
+                                    doTranslation(recognizedText);
+
+                                }
+                            })
+                            .addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+
+                                    progressDialog.dismiss();
+                                    Log.e(TAG, "onFailure: ", e);
+                                    Toast.makeText(MainActivity.this, ""+e.getMessage(), Toast.LENGTH_SHORT).show();
+
+                                }
+                            });
+
+
+                } catch (Exception e) {
+                    progressDialog.dismiss();
+                    Log.e(TAG, "recognizeTextFromImage: ", e);
+                    Toast.makeText(MainActivity.this, "Failed recognizing text due to "+e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+
+
+
             }
             else{
                 doTranslation(recognizedText);
@@ -418,7 +457,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             progressDialog.dismiss();
             Log.e(TAG, "recognizeTextFromImage: ", e);
-            Toast.makeText(MainActivity.this, "Failed translating text due to "+e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "Failed translating text due to "+e.getMessage(), Toast.LENGTH_LONG).show();
         }
 
     }
@@ -437,7 +476,7 @@ public class MainActivity extends AppCompatActivity {
 
                         progressDialog.dismiss();
                         Log.e(TAG, "onFailure: ", e);
-                        Toast.makeText(MainActivity.this, ""+e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, ""+e.getMessage(), Toast.LENGTH_LONG).show();
 
                     }
                 });
