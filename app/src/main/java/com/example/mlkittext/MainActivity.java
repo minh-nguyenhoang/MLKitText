@@ -1,5 +1,7 @@
 package com.example.mlkittext;
 
+import static com.google.android.gms.tasks.Tasks.await;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
@@ -44,6 +46,8 @@ import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     //UI Views
@@ -55,8 +59,12 @@ public class MainActivity extends AppCompatActivity {
     private MaterialButton switchLangBtn;
     private MaterialButton translateBtn;
 
+    private GraphicOverlay mGraphicOverlay;
+
     public String leftLang;
     public String rightLang;
+    private String leftLangCode;
+    private String rightLangCode;
 
 
     //TAG
@@ -89,6 +97,8 @@ public class MainActivity extends AppCompatActivity {
         recognizedTextEt = findViewById(R.id.recognizedTextEt);
         translateBtn = findViewById(R.id.translateBtn);
 
+        mGraphicOverlay = findViewById(R.id.graphic_overlay);
+
 
         //init array of permissions required for camera-gallery
         cameraPermissions = new String[]{android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
@@ -108,10 +118,13 @@ public class MainActivity extends AppCompatActivity {
         leftLang = ((MaterialButton)findViewById(R.id.leftLanguage)).getText().toString();
         rightLang = ((MaterialButton)findViewById(R.id.rightLanguage)).getText().toString();
 
+        leftLangCode = TranslateLanguage.ENGLISH;
+        rightLangCode = TranslateLanguage.VIETNAMESE;
+
         TranslatorOptions options =
                 new TranslatorOptions.Builder()
-                        .setSourceLanguage(TranslateLanguage.ENGLISH)
-                        .setTargetLanguage(TranslateLanguage.VIETNAMESE)
+                        .setSourceLanguage(leftLangCode)
+                        .setTargetLanguage(rightLangCode)
                         .build();
 
         textTranslator = Translation.getClient(options);
@@ -131,14 +144,20 @@ public class MainActivity extends AppCompatActivity {
                 leftLang = ((MaterialButton)findViewById(R.id.leftLanguage)).getText().toString();
                 rightLang = ((MaterialButton)findViewById(R.id.rightLanguage)).getText().toString();
 
+                String varLangCode = leftLangCode.toString();
+                leftLangCode = rightLangCode.toString();
+                rightLangCode = varLangCode.toString();
+
+
                 TranslatorOptions options =
                         new TranslatorOptions.Builder()
-                                .setSourceLanguage(TranslateLanguage.ENGLISH)
-                                .setTargetLanguage(TranslateLanguage.VIETNAMESE)
+                                .setSourceLanguage(leftLangCode)
+                                .setTargetLanguage(rightLangCode)
                                 .build();
 
                 textTranslator = Translation.getClient(options);
                 textTranslator.downloadModelIfNeeded(conditions);
+
 
 
 
@@ -197,12 +216,26 @@ public class MainActivity extends AppCompatActivity {
                     .addOnSuccessListener(new OnSuccessListener<Text>() {
                         @Override
                         public void onSuccess(Text text) {
-
                             progressDialog.dismiss();
-                            String recognizedText = text.getText();
-                            Log.d(TAG, "onSuccess: recognizedText:"+ recognizedText);
 
-                            recognizedTextEt.setText(recognizedText);
+//                            processTextRecognitionResult(text);
+//                            String recognizedText = text.getText();
+//                            Log.d(TAG, "onSuccess: recognizedText:"+ recognizedText);
+//
+//                            recognizedTextEt.setText(recognizedText);
+
+                            List<Text.TextBlock> blocks = text.getTextBlocks();
+                            if (blocks.size() == 0) {
+                                Toast.makeText(MainActivity.this, "No text found!", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            String tmpStr = new String();
+
+                            for (int i = 0; i < blocks.size(); i++) {
+                                Text.TextBlock block = blocks.get(i);
+                                tmpStr += "Block " + Integer.toString(i) + "\n" + block.getText() + "\n\n";
+                            }
+                            recognizedTextEt.setText(tmpStr);
                         }
                     })
                     .addOnFailureListener(new OnFailureListener() {
@@ -481,4 +514,26 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
     }
+
+    private void processTextRecognitionResult(Text texts) {
+        List<Text.TextBlock> blocks = texts.getTextBlocks();
+        if (blocks.size() == 0) {
+            Toast.makeText(MainActivity.this, "No text found!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        mGraphicOverlay.clear();
+        for (int i = 0; i < blocks.size(); i++) {
+            List<Text.Line> lines = blocks.get(i).getLines();
+            for (int j = 0; j < lines.size(); j++) {
+                List<Text.Element> elements = lines.get(j).getElements();
+                for (int k = 0; k < elements.size(); k++) {
+                    GraphicOverlay.Graphic textGraphic = new TextGraphic(mGraphicOverlay, elements.get(k));
+                    mGraphicOverlay.add(textGraphic);
+
+                }
+            }
+        }
+    }
+
 }

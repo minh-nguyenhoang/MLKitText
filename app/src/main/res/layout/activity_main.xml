@@ -102,14 +102,37 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!--ImageView: Show Image we took from Camera/Gallery-->
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/imageIv"
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:src="@drawable/baseline_image_24"
-                android:adjustViewBounds="true"
-                app:strokeWidth="2dp"/>
+                android:layout_height="match_parent">
+
+                <!--ImageView: Show Image we took from Camera/Gallery-->
+
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/imageIv"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitStart"
+                    android:src="@drawable/baseline_image_24"
+                    app:layout_constraintBottom_toTopOf="parent"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toBottomOf="parent"
+                    app:strokeWidth="2dp" />
+
+                <com.example.mlkittext.GraphicOverlay
+                    android:id="@+id/graphic_overlay"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    app:layout_constraintBottom_toBottomOf="@id/imageIv"
+                    app:layout_constraintLeft_toLeftOf="@id/imageIv"
+                    app:layout_constraintRight_toRightOf="@id/imageIv"
+                    app:layout_constraintTop_toTopOf="@id/imageIv" />
+
+
+            </RelativeLayout>
 
             <!--TextView: Label to show that below will be the recognized text shown-->
 
